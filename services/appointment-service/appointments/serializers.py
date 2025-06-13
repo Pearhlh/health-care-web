@@ -5,30 +5,8 @@ from .models import (
     Appointment,
     AppointmentReminder,
     AppointmentReason,
-    PatientVisit,
-    Department,
-    DoctorProfile,
-    AppointmentStatus
+    PatientVisit
 )
-
-
-class DepartmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Department
-        fields = '__all__'
-
-
-class DoctorProfileSerializer(serializers.ModelSerializer):
-    department_name = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = DoctorProfile
-        fields = '__all__'
-        
-    def get_department_name(self, obj):
-        if obj.department:
-            return obj.department.name
-        return None
 
 
 class DoctorAvailabilitySerializer(serializers.ModelSerializer):
@@ -178,8 +156,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
     location = serializers.CharField(source='time_slot.location', read_only=True)
     visit_data = PatientVisitSerializer(source='visit', read_only=True)
     reason_category_details = AppointmentReasonSerializer(source='reason_category', read_only=True)
-    doctor_name = serializers.SerializerMethodField()
-    department_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Appointment
@@ -189,19 +165,9 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'priority', 'priority_name', 'reason_text', 'reason_category', 'reason_category_details',
             'is_recurring', 'recurrence_pattern', 'recurrence_end_date', 'parent_appointment',
             'is_follow_up', 'follow_up_to', 'notes', 'reminders', 'visit_data',
-            'medical_record_id', 'prescription_id', 'lab_request_id', 'billing_id', 'location', 'created_at', 'updated_at',
-            'doctor_name', 'department_name'
+            'medical_record_id', 'prescription_id', 'lab_request_id', 'billing_id', 'location', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'doctor_id', 'appointment_date', 'start_time', 'end_time']
-
-    def get_doctor_name(self, obj):
-        # Lấy thông tin từ user-service thông qua integration
-        return f"Dr. {obj.doctor.user_id}"  # Placeholder, sẽ được thay bằng tích hợp thực tế
-
-    def get_department_name(self, obj):
-        if obj.doctor and obj.doctor.department:
-            return obj.doctor.department.name
-        return None
 
     def create(self, validated_data):
         # If time_slot is provided, update it using the new method

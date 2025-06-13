@@ -532,7 +532,7 @@ paths:
       tags:
       - doctor-availabilities
     parameters: []
-  /doctor-availabilities/create_schedule_with_slots/:
+  /doctor-availabilities/create_schedule/:
     post:
       operationId: doctor-availabilities_create_schedule_with_slots
       description: |-

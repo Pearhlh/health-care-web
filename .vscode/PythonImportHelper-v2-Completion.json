@@ -68,22 +68,6 @@
         "documentation": {}
     },
     {
-        "label": "migrations",
-        "importPath": "django.db",
-        "description": "django.db",
-        "isExtraImport": true,
-        "detail": "django.db",
-        "documentation": {}
-    },
-    {
-        "label": "models",
-        "importPath": "django.db",
-        "description": "django.db",
-        "isExtraImport": true,
-        "detail": "django.db",
-        "documentation": {}
-    },
-    {
         "label": "models",
         "importPath": "django.db",
         "description": "django.db",
@@ -754,6 +738,15 @@
         "importPath": "django.db.models.deletion",
         "description": "django.db.models.deletion",
         "detail": "django.db.models.deletion",
+        "documentation": {}
+    },
+    {
+        "label": "uuid",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "uuid",
+        "description": "uuid",
+        "detail": "uuid",
         "documentation": {}
     },
     {
@@ -1848,15 +1841,6 @@
         "documentation": {}
     },
     {
-        "label": "uuid",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "uuid",
-        "description": "uuid",
-        "detail": "uuid",
-        "documentation": {}
-    },
-    {
         "label": "AppointmentPermissions",
         "importPath": "common_auth.permissions",
         "description": "common_auth.permissions",
@@ -2406,6 +2390,22 @@
         "description": "datetime",
         "isExtraImport": true,
         "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "path",
+        "importPath": "django.urls",
+        "description": "django.urls",
+        "isExtraImport": true,
+        "detail": "django.urls",
+        "documentation": {}
+    },
+    {
+        "label": "include",
+        "importPath": "django.urls",
+        "description": "django.urls",
+        "isExtraImport": true,
+        "detail": "django.urls",
         "documentation": {}
     },
     {
@@ -4477,15 +4477,6 @@
         "documentation": {}
     },
     {
-        "label": "Migration",
-        "kind": 6,
-        "importPath": "services.appointment-service.appointments.migrations.0002_remove_timeslot_is_available_and_more",
-        "description": "services.appointment-service.appointments.migrations.0002_remove_timeslot_is_available_and_more",
-        "peekOfCode": "class Migration(migrations.Migration):\n    dependencies = [\n        ('appointments', '0001_initial'),\n    ]\n    operations = [\n        migrations.RemoveField(\n            model_name='timeslot',\n            name='is_available',\n        ),\n        migrations.AddField(",
-        "detail": "services.appointment-service.appointments.migrations.0002_remove_timeslot_is_available_and_more",
-        "documentation": {}
-    },
-    {
         "label": "DoctorAvailabilityAdmin",
         "kind": 6,
         "importPath": "services.appointment-service.appointments.admin",
@@ -4994,7 +4985,7 @@
         "kind": 6,
         "importPath": "services.appointment-service.appointments.models",
         "description": "services.appointment-service.appointments.models",
-        "peekOfCode": "class DoctorAvailability(models.Model):\n    \"\"\"Lịch trống của bác sĩ\"\"\"\n    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)\n    doctor = models.ForeignKey(DoctorProfile, on_delete=models.CASCADE, related_name='availabilities')\n    date = models.DateField()\n    start_time = models.TimeField()\n    end_time = models.TimeField()\n    is_available = models.BooleanField(default=True)  # False nếu đã có lịch hẹn\n    created_at = models.DateTimeField(auto_now_add=True)\n    updated_at = models.DateTimeField(auto_now=True)",
+        "peekOfCode": "class DoctorAvailability(models.Model):\n    \"\"\"Lịch làm việc của bác sĩ\"\"\"\n    WEEKDAY_CHOICES = [\n        (0, 'Monday'),\n        (1, 'Tuesday'),\n        (2, 'Wednesday'),\n        (3, 'Thursday'),\n        (4, 'Friday'),\n        (5, 'Saturday'),\n        (6, 'Sunday'),",
         "detail": "services.appointment-service.appointments.models",
         "documentation": {}
     },
@@ -5017,20 +5008,11 @@
         "documentation": {}
     },
     {
-        "label": "AppointmentStatus",
-        "kind": 6,
-        "importPath": "services.appointment-service.appointments.models",
-        "description": "services.appointment-service.appointments.models",
-        "peekOfCode": "class AppointmentStatus(models.TextChoices):\n    PENDING = 'PENDING', 'Chờ xác nhận'\n    CONFIRMED = 'CONFIRMED', 'Đã xác nhận'\n    COMPLETED = 'COMPLETED', 'Hoàn thành'\n    CANCELLED = 'CANCELLED', 'Đã hủy'\n    RESCHEDULED = 'RESCHEDULED', 'Đã đổi lịch'\n    NO_SHOW = 'NO_SHOW', 'Không đến'\nclass Appointment(models.Model):\n    \"\"\"Lịch hẹn của bệnh nhân với bác sĩ\"\"\"\n    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)",
-        "detail": "services.appointment-service.appointments.models",
-        "documentation": {}
-    },
-    {
         "label": "Appointment",
         "kind": 6,
         "importPath": "services.appointment-service.appointments.models",
         "description": "services.appointment-service.appointments.models",
-        "peekOfCode": "class Appointment(models.Model):\n    \"\"\"Lịch hẹn của bệnh nhân với bác sĩ\"\"\"\n    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)\n    patient_id = models.IntegerField()  # ID từ user service\n    doctor = models.ForeignKey(DoctorProfile, on_delete=models.CASCADE, related_name='appointments')\n    availability = models.OneToOneField(DoctorAvailability, on_delete=models.SET_NULL, null=True, related_name='appointment')\n    appointment_date = models.DateField()\n    start_time = models.TimeField()\n    end_time = models.TimeField()\n    status = models.CharField(max_length=20, choices=AppointmentStatus.choices, default=AppointmentStatus.PENDING)",
+        "peekOfCode": "class Appointment(models.Model):\n    \"\"\"Lịch hẹn khám bệnh\"\"\"\n    STATUS_CHOICES = [\n        ('PENDING', 'Chờ xác nhận'),\n        ('CONFIRMED', 'Đã xác nhận'),\n        ('CHECKED_IN', 'Đã check-in'),\n        ('IN_PROGRESS', 'Đang khám'),\n        ('COMPLETED', 'Đã hoàn thành'),\n        ('CANCELLED', 'Đã hủy'),\n        ('NO_SHOW', 'Không đến'),",
         "detail": "services.appointment-service.appointments.models",
         "documentation": {}
     },
@@ -5140,24 +5122,6 @@
         "description": "services.appointment-service.appointments.permissions",
         "peekOfCode": "CanManageDoctorSchedule = AppointmentPermissions.CanManageDoctorSchedule\n# Quyền hạn mới cho y tá\nclass CanAssistDoctor:\n    \"\"\"\n    Permission cho phép y tá hỗ trợ bác sĩ trong quản lý lịch hẹn.\n    Y tá có thể xem, check-in và cập nhật thông tin sinh tồn cho bệnh nhân.\n    \"\"\"\n    def has_permission(self, request, view):\n        user_role = getattr(request.user, 'role', None)\n        return user_role in ['NURSE', 'DOCTOR', 'ADMIN']",
         "detail": "services.appointment-service.appointments.permissions",
-        "documentation": {}
-    },
-    {
-        "label": "DepartmentSerializer",
-        "kind": 6,
-        "importPath": "services.appointment-service.appointments.serializers",
-        "description": "services.appointment-service.appointments.serializers",
-        "peekOfCode": "class DepartmentSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = Department\n        fields = '__all__'\nclass DoctorProfileSerializer(serializers.ModelSerializer):\n    department_name = serializers.SerializerMethodField()\n    class Meta:\n        model = DoctorProfile\n        fields = '__all__'\n    def get_department_name(self, obj):",
-        "detail": "services.appointment-service.appointments.serializers",
-        "documentation": {}
-    },
-    {
-        "label": "DoctorProfileSerializer",
-        "kind": 6,
-        "importPath": "services.appointment-service.appointments.serializers",
-        "description": "services.appointment-service.appointments.serializers",
-        "peekOfCode": "class DoctorProfileSerializer(serializers.ModelSerializer):\n    department_name = serializers.SerializerMethodField()\n    class Meta:\n        model = DoctorProfile\n        fields = '__all__'\n    def get_department_name(self, obj):\n        if obj.department:\n            return obj.department.name\n        return None\nclass DoctorAvailabilitySerializer(serializers.ModelSerializer):",
-        "detail": "services.appointment-service.appointments.serializers",
         "documentation": {}
     },
     {
@@ -5282,7 +5246,7 @@
         "kind": 5,
         "importPath": "services.appointment-service.appointments.urls",
         "description": "services.appointment-service.appointments.urls",
-        "peekOfCode": "router = DefaultRouter()\nrouter.register(r'doctor-availabilities', DoctorAvailabilityViewSet)\nrouter.register(r'time-slots', TimeSlotViewSet)\nrouter.register(r'appointments', AppointmentViewSet)\nrouter.register(r'patient-visits', PatientVisitViewSet)\nrouter.register(r'appointment-reasons', AppointmentReasonViewSet)\nrouter.register(r'departments', DepartmentViewSet)\nrouter.register(r'doctors', DoctorProfileViewSet)\n# Cấu trúc URL đơn giản và thống nhất\nurlpatterns = [",
+        "peekOfCode": "router = DefaultRouter()\nrouter.register(r'appointments', AppointmentViewSet)\nrouter.register(r'doctor-availabilities', DoctorAvailabilityViewSet)\nrouter.register(r'time-slots', TimeSlotViewSet)\nrouter.register(r'patient-visits', PatientVisitViewSet)\n# Removed AppointmentReasonViewSet; using function endpoint instead\n# Cấu trúc URL đơn giản và thống nhất\nurlpatterns = [\n    path('', include(router.urls)),\n    path('appointment-reasons/', appointment_reasons_list, name='appointment-reasons-list'),",
         "detail": "services.appointment-service.appointments.urls",
         "documentation": {}
     },
@@ -5291,7 +5255,7 @@
         "kind": 5,
         "importPath": "services.appointment-service.appointments.urls",
         "description": "services.appointment-service.appointments.urls",
-        "peekOfCode": "urlpatterns = [\n    path('', include(router.urls)),\n]",
+        "peekOfCode": "urlpatterns = [\n    path('', include(router.urls)),\n    path('appointment-reasons/', appointment_reasons_list, name='appointment-reasons-list'),\n]",
         "detail": "services.appointment-service.appointments.urls",
         "documentation": {}
     },
@@ -5328,24 +5292,6 @@
         "importPath": "services.appointment-service.appointments.views",
         "description": "services.appointment-service.appointments.views",
         "peekOfCode": "class PatientVisitViewSet(viewsets.ModelViewSet):\n    \"\"\"\n    API endpoint for managing patient visits (check-ins).\n    Supports both URL structures:\n    - /api/patient-visits/\n    - /api/appointments/visits/\n    \"\"\"\n    queryset = PatientVisit.objects.all()\n    serializer_class = PatientVisitSerializer\n    authentication_classes = [CustomJWTAuthentication]",
-        "detail": "services.appointment-service.appointments.views",
-        "documentation": {}
-    },
-    {
-        "label": "DepartmentViewSet",
-        "kind": 6,
-        "importPath": "services.appointment-service.appointments.views",
-        "description": "services.appointment-service.appointments.views",
-        "peekOfCode": "class DepartmentViewSet(viewsets.ModelViewSet):\n    \"\"\"\n    API để quản lý Khoa.\n    \"\"\"\n    queryset = Department.objects.all()\n    serializer_class = DepartmentSerializer\n    def get_permissions(self):\n        \"\"\"\n        Admin có thể tạo/sửa/xóa, nhưng mọi người đều có thể xem.\n        \"\"\"",
-        "detail": "services.appointment-service.appointments.views",
-        "documentation": {}
-    },
-    {
-        "label": "DoctorProfileViewSet",
-        "kind": 6,
-        "importPath": "services.appointment-service.appointments.views",
-        "description": "services.appointment-service.appointments.views",
-        "peekOfCode": "class DoctorProfileViewSet(viewsets.ModelViewSet):\n    \"\"\"\n    API để quản lý hồ sơ bác sĩ.\n    \"\"\"\n    queryset = DoctorProfile.objects.filter(is_active=True)\n    serializer_class = DoctorProfileSerializer\n    def get_permissions(self):\n        \"\"\"\n        Admin có thể tạo/sửa/xóa, bác sĩ có thể cập nhật thông tin của mình.\n        \"\"\"",
         "detail": "services.appointment-service.appointments.views",
         "documentation": {}
     },

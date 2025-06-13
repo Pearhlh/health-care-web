@@ -160,6 +160,45 @@ paths:
       tags:
       - admin-profile
     parameters: []
+  /admin-profile/{id}/by-user/:
+    get:
+      operationId: admin-profile_by_user
+      description: ViewSet để quản lý hồ sơ quản trị viên.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/AdminProfile'
+      tags:
+      - admin-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /admin-profile/{id}/update-by-user/:
+    post:
+      operationId: admin-profile_update_by_user
+      description: ViewSet để quản lý hồ sơ quản trị viên.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/AdminProfile'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/AdminProfile'
+      tags:
+      - admin-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
   /auth/login/:
     post:
       operationId: auth_login
@@ -211,6 +250,24 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/UserRegistration'
+      tags:
+      - auth
+    parameters: []
+  /auth/token/:
+    post:
+      operationId: auth_token
+      description: ''
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/UserLogin'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/UserLogin'
       tags:
       - auth
     parameters: []
@@ -333,6 +390,45 @@ paths:
       tags:
       - doctor-profile
     parameters: []
+  /doctor-profile/{id}/by-user/:
+    get:
+      operationId: doctor-profile_by_user
+      description: ViewSet để quản lý hồ sơ bác sĩ.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/DoctorProfile'
+      tags:
+      - doctor-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /doctor-profile/{id}/update-by-user/:
+    post:
+      operationId: doctor-profile_update_by_user
+      description: ViewSet để quản lý hồ sơ bác sĩ.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/DoctorProfile'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/DoctorProfile'
+      tags:
+      - doctor-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
   /doctors/:
     get:
       operationId: doctors_list
@@ -630,6 +726,45 @@ paths:
       tags:
       - insurance-provider-profile
     parameters: []
+  /insurance-provider-profile/{id}/by-user/:
+    get:
+      operationId: insurance-provider-profile_by_user
+      description: ViewSet để quản lý hồ sơ nhà cung cấp bảo hiểm.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/InsuranceProviderProfile'
+      tags:
+      - insurance-provider-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /insurance-provider-profile/{id}/update-by-user/:
+    post:
+      operationId: insurance-provider-profile_update_by_user
+      description: ViewSet để quản lý hồ sơ nhà cung cấp bảo hiểm.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/InsuranceProviderProfile'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/InsuranceProviderProfile'
+      tags:
+      - insurance-provider-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
   /lab-technician-profile/create_or_update/:
     post:
       operationId: lab-technician-profile_create_or_update
@@ -674,6 +809,45 @@ paths:
       tags:
       - lab-technician-profile
     parameters: []
+  /lab-technician-profile/{id}/by-user/:
+    get:
+      operationId: lab-technician-profile_by_user
+      description: ViewSet để quản lý hồ sơ kỹ thuật viên phòng thí nghiệm.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/LabTechnicianProfile'
+      tags:
+      - lab-technician-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /lab-technician-profile/{id}/update-by-user/:
+    post:
+      operationId: lab-technician-profile_update_by_user
+      description: ViewSet để quản lý hồ sơ kỹ thuật viên phòng thí nghiệm.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/LabTechnicianProfile'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/LabTechnicianProfile'
+      tags:
+      - lab-technician-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
   /nurse-profile/create_or_update/:
     post:
       operationId: nurse-profile_create_or_update
@@ -718,6 +892,45 @@ paths:
       tags:
       - nurse-profile
     parameters: []
+  /nurse-profile/{id}/by-user/:
+    get:
+      operationId: nurse-profile_by_user
+      description: ViewSet để quản lý hồ sơ y tá.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/NurseProfile'
+      tags:
+      - nurse-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /nurse-profile/{id}/update-by-user/:
+    post:
+      operationId: nurse-profile_update_by_user
+      description: ViewSet để quản lý hồ sơ y tá.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/NurseProfile'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/NurseProfile'
+      tags:
+      - nurse-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
   /patient-profile/create_or_update/:
     post:
       operationId: patient-profile_create_or_update
@@ -762,6 +975,45 @@ paths:
       tags:
       - patient-profile
     parameters: []
+  /patient-profile/{id}/by-user/:
+    get:
+      operationId: patient-profile_by_user
+      description: ViewSet để quản lý hồ sơ bệnh nhân.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/PatientProfile'
+      tags:
+      - patient-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /patient-profile/{id}/update-by-user/:
+    post:
+      operationId: patient-profile_update_by_user
+      description: ViewSet để quản lý hồ sơ bệnh nhân.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PatientProfile'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/PatientProfile'
+      tags:
+      - patient-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
   /pharmacist-profile/create_or_update/:
     post:
       operationId: pharmacist-profile_create_or_update
@@ -806,6 +1058,45 @@ paths:
       tags:
       - pharmacist-profile
     parameters: []
+  /pharmacist-profile/{id}/by-user/:
+    get:
+      operationId: pharmacist-profile_by_user
+      description: ViewSet để quản lý hồ sơ dược sĩ.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/PharmacistProfile'
+      tags:
+      - pharmacist-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /pharmacist-profile/{id}/update-by-user/:
+    post:
+      operationId: pharmacist-profile_update_by_user
+      description: ViewSet để quản lý hồ sơ dược sĩ.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PharmacistProfile'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/PharmacistProfile'
+      tags:
+      - pharmacist-profile
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
   /specialties/:
     get:
       operationId: specialties_list
@@ -833,7 +1124,7 @@ paths:
       - users
     post:
       operationId: users_create
-      description: Tạo người dùng mới (chỉ dành cho admin)
+      description: ViewSet để quản lý người dùng.
       parameters:
       - name: data
         in: body
@@ -950,6 +1241,30 @@ paths:
       parameters: []
       responses:
         '204':
+          description: ''
+      tags:
+      - users
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /users/{id}/profile:
+    get:
+      operationId: users_profile_list
+      description: Lấy hoặc cập nhật profile của user theo role.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+      - users
+    put:
+      operationId: users_profile_update
+      description: Lấy hoặc cập nhật profile của user theo role.
+      parameters: []
+      responses:
+        '200':
           description: ''
       tags:
       - users

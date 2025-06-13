@@ -9,14 +9,16 @@ export async function GET(request) {
     const department_id = url.searchParams.get("department_id");
     const user_id = url.searchParams.get("user_id");
     const no_doctor_profile = url.searchParams.get("no_doctor_profile");
+    const specialization = url.searchParams.get("specialization");
 
     // Tạo object params
     const params = {};
     if (department_id) params.department_id = department_id;
     if (user_id) params.user_id = user_id;
     if (no_doctor_profile) params.no_doctor_profile = no_doctor_profile;
+    if (specialization) params.specialization = specialization;
 
-    const response = await axios.get("/api-gateway/doctors", { params });
+    const response = await axios.get("/api/doctors", { params });
     return NextResponse.json(response.data);
   } catch (error) {
     return NextResponse.json(
@@ -34,7 +36,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const response = await axios.post("/api-gateway/doctors", body);
+    const response = await axios.post("/api/doctors", body);
     return NextResponse.json(response.data);
   } catch (error) {
     return NextResponse.json(

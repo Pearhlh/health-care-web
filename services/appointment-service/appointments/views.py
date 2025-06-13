@@ -5,17 +5,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from datetime import datetime, timedelta
 from rest_framework.permissions import IsAuthenticated
-from .models import DoctorAvailability, TimeSlot, Appointment, PatientVisit, AppointmentReason, Department, DoctorProfile, AppointmentStatus
+from .models import DoctorAvailability, TimeSlot, Appointment, PatientVisit, AppointmentReason
 from .serializers import (
     DoctorAvailabilitySerializer,
     TimeSlotSerializer,
     AppointmentSerializer,
     AppointmentCreateSerializer,
     PatientVisitSerializer,
-    AppointmentReasonSerializer,
-    DepartmentSerializer,
-    DoctorProfileSerializer,
-    DoctorAvailabilityCreateSerializer
+    AppointmentReasonSerializer
 )
 from .permissions import (
     CanViewAppointments, CanManageDoctorSchedule, IsAdmin
@@ -63,7 +60,7 @@ class DoctorAvailabilityViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='create_schedule')
     def create_schedule_with_slots(self, request):
         """
         Tạo lịch làm việc cho bác sĩ và tự động tạo khung giờ khám bệnh trong một lần gọi.
@@ -1506,70 +1503,6 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'])
-    def update_status(self, request, pk=None):
-        """
-        Cập nhật trạng thái của lịch hẹn.
-        """
-        appointment = self.get_object()
-        new_status = request.data.get('status', None)
-        
-        if not new_status or new_status not in dict(AppointmentStatus.choices):
-            return Response(
-                {"error": f"Invalid status. Available statuses: {dict(AppointmentStatus.choices)}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        appointment.status = new_status
-        appointment.save()
-        
-        serializer = self.get_serializer(appointment)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def my_appointments(self, request):
-        """
-        Lấy tất cả lịch hẹn của người dùng hiện tại.
-        """
-        if request.user.role == 'DOCTOR':
-            doctor = DoctorProfile.objects.filter(user_id=request.user.id).first()
-            if not doctor:
-                return Response(
-                    {"error": "Doctor profile not found for this user"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            appointments = Appointment.objects.filter(doctor=doctor)
-        else:  # Patient
-            appointments = Appointment.objects.filter(patient_id=request.user.id)
-        
-        # Lọc theo trạng thái nếu có
-        status_filter = request.query_params.get('status', None)
-        if status_filter:
-            appointments = appointments.filter(status=status_filter)
-        
-        # Lọc theo ngày nếu có
-        start_date = request.query_params.get('start_date', None)
-        end_date = request.query_params.get('end_date', None)
-        
-        if start_date:
-            try:
-                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-                appointments = appointments.filter(appointment_date__gte=start_date)
-            except ValueError:
-                return Response({'error': 'Invalid start_date format. Use YYYY-MM-DD'}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-        
-        if end_date:
-            try:
-                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-                appointments = appointments.filter(appointment_date__lte=end_date)
-            except ValueError:
-                return Response({'error': 'Invalid end_date format. Use YYYY-MM-DD'}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-        
-        serializer = self.get_serializer(appointments, many=True)
-        return Response(serializer.data)
-
 
 class PatientVisitViewSet(viewsets.ModelViewSet):
     """
@@ -2242,83 +2175,3 @@ def appointment_reasons_list(request):
         'count': reasons.count(),
         'results': serializer.data
     })
-
-
-class DepartmentViewSet(viewsets.ModelViewSet):
-    """
-    API để quản lý Khoa.
-    """
-    queryset = Department.objects.all()
-    serializer_class = DepartmentSerializer
-    
-    def get_permissions(self):
-        """
-        Admin có thể tạo/sửa/xóa, nhưng mọi người đều có thể xem.
-        """
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsAdminUser()]
-        return [permissions.AllowAny()]
-
-
-class DoctorProfileViewSet(viewsets.ModelViewSet):
-    """
-    API để quản lý hồ sơ bác sĩ.
-    """
-    queryset = DoctorProfile.objects.filter(is_active=True)
-    serializer_class = DoctorProfileSerializer
-    
-    def get_permissions(self):
-        """
-        Admin có thể tạo/sửa/xóa, bác sĩ có thể cập nhật thông tin của mình.
-        """
-        if self.action in ['create', 'destroy']:
-            return [IsAdminUser()]
-        elif self.action in ['update', 'partial_update']:
-            return [IsAdminUser() | IsDoctorUser()]
-        return [permissions.AllowAny()]
-    
-    @action(detail=False, methods=['get'])
-    def by_department(self, request):
-        """
-        Lấy danh sách bác sĩ theo khoa.
-        """
-        department_id = request.query_params.get('department_id', None)
-        if not department_id:
-            return Response({'error': 'department_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        doctors = self.queryset.filter(department_id=department_id)
-        serializer = self.get_serializer(doctors, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['get'])
-    def availabilities(self, request, pk=None):
-        """
-        Lấy danh sách các khung giờ trống của một bác sĩ.
-        """
-        doctor = self.get_object()
-        
-        # Lọc theo ngày nếu có
-        start_date = request.query_params.get('start_date', None)
-        end_date = request.query_params.get('end_date', None)
-        
-        query = Q(doctor=doctor, is_available=True)
-        
-        if start_date:
-            try:
-                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-                query &= Q(date__gte=start_date)
-            except ValueError:
-                return Response({'error': 'Invalid start_date format. Use YYYY-MM-DD'}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-        
-        if end_date:
-            try:
-                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-                query &= Q(date__lte=end_date)
-            except ValueError:
-                return Response({'error': 'Invalid end_date format. Use YYYY-MM-DD'}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-        
-        availabilities = DoctorAvailability.objects.filter(query).order_by('date', 'start_time')
-        serializer = DoctorAvailabilitySerializer(availabilities, many=True)
-        return Response(serializer.data)
