@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:postgres@localhost:5432/healthcare"
+}
+
+// Mô hình người dùng
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  first_name  String
+  last_name   String
+  password    String
+  role        String    // ADMIN, DOCTOR, NURSE, PATIENT, PHARMACIST, LAB_TECH
+  is_active   Boolean   @default(true)
+  date_joined DateTime  @default(now())
+  last_login  DateTime?
+  profile     Profile?
+  
+  @@map("users")
+}
+
+// Mô hình profile người dùng
+model Profile {
+  id                Int     @id @default(autoincrement())
+  user_id           Int     @unique
+  user              User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  phone             String?
+  address           String?
+  
+  // Các trường cho ADMIN
+  department        String?
+  position          String?
+  
+  // Các trường cho DOCTOR
+  specialization    String?
+  qualification     String?
+  experience        Int?
+  bio               String?
+  
+  // Các trường cho PATIENT
+  dob               String?
+  gender            String?
+  blood_type        String?
+  allergies         String?
+  emergency_contact String?
+  
+  // Các trường cho PHARMACIST
+  license_number    String?
+  
+  // Các trường cho LAB_TECH
+  lab_department    String?
+  
+  @@map("profiles")
+}

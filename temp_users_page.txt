@@ -1,0 +1,1 @@
+"use client"; import { useState } from "react"; export default function UsersPage() { return <div className="p-8"><h1 className="text-2xl font-bold">Quản lý người dùng</h1><p>Đang xây dựng...</p></div>; }
