@@ -35,6 +35,54 @@ interface User {
   date_joined: string;
 }
 
+const DEPARTMENTS = [
+  { value: "NOI", label: "Nội" },
+  { value: "NGOAI", label: "Ngoại" },
+  { value: "SAN", label: "Sản" },
+  { value: "NHI", label: "Nhi" },
+  { value: "KHAC", label: "Khác" },
+];
+const SPECIALTIES: Record<string, { value: string; label: string }[]> = {
+  NOI: [
+    { value: "NOI_TIM_MACH", label: "Nội Tim Mạch" },
+    { value: "NOI_TIEU_HOA", label: "Nội Tiêu Hóa" },
+    { value: "NOI_HO_HAP", label: "Nội Hô Hấp" },
+    { value: "NOI_THAN", label: "Nội Thận" },
+    { value: "NOI_TIET", label: "Nội Tiết" },
+    { value: "NOI_THAN_KINH", label: "Nội Thần Kinh" },
+    { value: "NOI_DA_LIEU", label: "Nội Da Liễu" },
+    { value: "NOI_TONG_QUAT", label: "Nội Tổng Quát" },
+  ],
+  NGOAI: [
+    { value: "NGOAI_CHINH_HINH", label: "Ngoại Chỉnh Hình" },
+    { value: "NGOAI_TIET_NIEU", label: "Ngoại Tiết Niệu" },
+    { value: "NGOAI_THAN_KINH", label: "Ngoại Thần Kinh" },
+    { value: "NGOAI_LONG_NGUC", label: "Ngoại Lồng Ngực" },
+    { value: "NGOAI_TIEU_HOA", label: "Ngoại Tiêu Hóa" },
+    { value: "NGOAI_TONG_QUAT", label: "Ngoại Tổng Quát" },
+  ],
+  SAN: [
+    { value: "SAN_KHOA", label: "Sản Khoa" },
+    { value: "PHU_KHOA", label: "Phụ Khoa" },
+    { value: "VO_SINH", label: "Vô Sinh" },
+  ],
+  NHI: [
+    { value: "NHI_TONG_QUAT", label: "Nhi Tổng Quát" },
+    { value: "NHI_TIM_MACH", label: "Nhi Tim Mạch" },
+    { value: "NHI_THAN_KINH", label: "Nhi Thần Kinh" },
+    { value: "NHI_SO_SINH", label: "Nhi Sơ Sinh" },
+  ],
+  KHAC: [
+    { value: "MAT", label: "Mắt" },
+    { value: "TAI_MUI_HONG", label: "Tai Mũi Họng" },
+    { value: "RANG_HAM_MAT", label: "Răng Hàm Mặt" },
+    { value: "TAM_THAN", label: "Tâm Thần" },
+    { value: "UNG_BUOU", label: "Ung Bướu" },
+    { value: "DA_KHOA", label: "Đa Khoa" },
+    { value: "KHAC", label: "Khác" },
+  ],
+};
+
 export default function UsersPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -60,6 +108,7 @@ export default function UsersPage() {
     role: "PATIENT",
     is_active: true,
   });
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -78,6 +127,15 @@ export default function UsersPage() {
 
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (editModalOpen && editForm.role === "DOCTOR") {
+      setSelectedDepartment(editForm.department || "");
+    }
+    if (!editModalOpen) {
+      setSelectedDepartment("");
+    }
+  }, [editModalOpen, editForm.role, editForm.department]);
 
   const login = async () => {
     setLoading(true);
@@ -579,52 +637,54 @@ export default function UsersPage() {
             {commonFields}
             <div className='grid grid-cols-2 gap-4'>
               <div className='space-y-2'>
+                <Label htmlFor='department'>Khoa</Label>
+                <Select
+                  value={selectedDepartment}
+                  onValueChange={(value) => {
+                    setSelectedDepartment(value);
+                    handleSelectChange("department", value);
+                    handleSelectChange("specialization", "");
+                  }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder='Chọn khoa' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map((dep) => (
+                      <SelectItem
+                        key={dep.value}
+                        value={dep.value}>
+                        {dep.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className='space-y-2'>
                 <Label htmlFor='specialization'>Chuyên khoa</Label>
                 <Select
                   value={editForm.specialization || ""}
                   onValueChange={(value) =>
                     handleSelectChange("specialization", value)
-                  }>
+                  }
+                  disabled={!selectedDepartment}>
                   <SelectTrigger>
-                    <SelectValue placeholder='Chọn chuyên khoa' />
+                    <SelectValue
+                      placeholder={
+                        selectedDepartment
+                          ? "Chọn chuyên khoa"
+                          : "Chọn khoa trước"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {[
-                      "NOI_TIM_MACH",
-                      "NOI_TIEU_HOA",
-                      "NOI_HO_HAP",
-                      "NOI_THAN",
-                      "NOI_TIET",
-                      "NOI_THAN_KINH",
-                      "NOI_DA_LIEU",
-                      "NOI_TONG_QUAT",
-                      "NGOAI_CHINH_HINH",
-                      "NGOAI_TIET_NIEU",
-                      "NGOAI_THAN_KINH",
-                      "NGOAI_LONG_NGUC",
-                      "NGOAI_TIEU_HOA",
-                      "NGOAI_TONG_QUAT",
-                      "SAN_KHOA",
-                      "PHU_KHOA",
-                      "VO_SINH",
-                      "NHI_TONG_QUAT",
-                      "NHI_TIM_MACH",
-                      "NHI_THAN_KINH",
-                      "NHI_SO_SINH",
-                      "MAT",
-                      "TAI_MUI_HONG",
-                      "RANG_HAM_MAT",
-                      "TAM_THAN",
-                      "UNG_BUOU",
-                      "DA_KHOA",
-                      "KHAC",
-                    ].map((spec) => (
-                      <SelectItem
-                        key={spec}
-                        value={spec}>
-                        {spec.replace("_", " ")}
-                      </SelectItem>
-                    ))}
+                    {selectedDepartment &&
+                      SPECIALTIES[selectedDepartment]?.map((spec) => (
+                        <SelectItem
+                          key={spec.value}
+                          value={spec.value}>
+                          {spec.label}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -644,15 +704,6 @@ export default function UsersPage() {
                   name='years_of_experience'
                   type='number'
                   value={editForm.years_of_experience || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='department'>Khoa</Label>
-                <Input
-                  id='department'
-                  name='department'
-                  value={editForm.department || ""}
                   onChange={handleInputChange}
                 />
               </div>

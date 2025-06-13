@@ -5,7 +5,7 @@ from .views import (
     PatientProfileViewSet, DoctorProfileViewSet, NurseProfileViewSet,
     PharmacistProfileViewSet, InsuranceProviderProfileViewSet, LabTechnicianProfileViewSet,
     AdminProfileViewSet, InsuranceInformationViewSet, SpecialtyViewSet, DepartmentViewSet,
-    DoctorListViewSet
+    DoctorListViewSet, user_profile_view
 )
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -62,4 +62,7 @@ urlpatterns = [
 
     # Thêm route đặc biệt cho medical-record-service
     path('users/doctors/<int:doctor_id>/', doctor_user_info, name='doctor-user-info'),
+
+    # Thêm route cho profile user
+    path('users/<int:pk>/profile', user_profile_view, name='user-profile'),
 ]

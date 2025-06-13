@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DoctorAvailability, TimeSlot } from "@/lib/api/appointment-service"
 import appointmentService from "@/lib/api/appointment-service"
+import UserService, { DoctorWorkingSchedule } from "@/lib/api/user-service"
 
 // Schema cho form tạo lịch làm việc đơn giản hóa
 const scheduleFormSchema = z.object({
@@ -57,8 +58,7 @@ const weekdayColors = [
 
 export function DoctorSchedule() {
   const [userId, setUserId] = useState<number | null>(null)
-  const [availabilities, setAvailabilities] = useState<DoctorAvailability[]>([])
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
+  const [schedules, setSchedules] = useState<DoctorWorkingSchedule[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
   const [viewDate, setViewDate] = useState<Date>(new Date())
@@ -160,194 +160,79 @@ export function DoctorSchedule() {
   }, []);
 
   // Lấy danh sách lịch làm việc của bác sĩ
-  const fetchAvailabilities = async () => {
-    if (!userId) return []
-
-    setIsLoading(true)
-    try {
-      const data = await appointmentService.getDoctorAvailabilities(userId)
-      setAvailabilities(data)
-      return data
-    } catch (error) {
-      console.error("Error fetching availabilities:", error)
-      toast.error("Không thể tải lịch làm việc. Vui lòng thử lại sau.")
-      return []
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Lấy danh sách khung giờ cho tuần hiện tại
-  const fetchTimeSlotsForWeek = async () => {
-    if (!userId) return {}
-
-    setIsLoading(true)
-    try {
-      // Tạo mảng các ngày trong tuần từ thứ Hai đến Chủ Nhật
-      const current = new Date(viewDate);
-      const currentDay = current.getDay(); // 0: CN, 1: T2, 2: T3, ..., 6: T7
-
-      // Điều chỉnh về thứ Hai đầu tuần
-      const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
-      const monday = new Date(current);
-      monday.setDate(current.getDate() + mondayOffset);
-
-      const weekDates = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + i);
-        return date;
-      });
-
-      console.log("Lấy dữ liệu cho các ngày:", weekDates.map(d => format(d, "yyyy-MM-dd")));
-
-      // Lấy time slots cho tuần hiện tại
-      const results = await Promise.all(
-        weekDates.map(async (date) => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          try {
-            const slots = await appointmentService.getTimeSlotsForDate(userId, dateStr);
-            console.log(`Lấy được ${slots.length} khung giờ cho ngày ${dateStr}`);
-            return slots;
-          } catch (error) {
-            console.error(`Error fetching time slots for ${dateStr}:`, error);
-            return [];
-          }
-        })
-      );
-
-      // Gộp tất cả kết quả
-      const allTimeSlots = results.flat();
-      console.log(`Tổng số khung giờ lấy được: ${allTimeSlots.length}`);
-      setTimeSlots(allTimeSlots);
-
-      // Tạo đối tượng kết quả theo ngày
-      const slotsByDate = {};
-      weekDates.forEach((date, index) => {
-        const dateStr = format(date, "yyyy-MM-dd");
-        slotsByDate[dateStr] = results[index];
-      });
-
-      // Nếu không có khung giờ nào, thử tạo khung giờ tự động cho lịch làm việc hiện tại
-      if (allTimeSlots.length === 0 && availabilities.length > 0) {
-        toast.info("Phát hiện lịch làm việc chưa có khung giờ. Hệ thống sẽ tự động tạo khung giờ.");
-
-        // Gọi hàm tạo khung giờ tự động (thực hiện sau 1 giây)
-        setTimeout(() => {
-          createTimeSlots(availabilities);
-        }, 1000);
-      }
-
-      return slotsByDate;
-    } catch (error) {
-      console.error("Error fetching time slots:", error);
-      toast.error("Không thể tải khung giờ. Vui lòng thử lại sau.");
-      return {};
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  // Tạo khung giờ tự động cho lịch làm việc sử dụng API generate_time_slots
-  const createTimeSlots = async (schedules: DoctorAvailability[]) => {
-    if (!userId || schedules.length === 0) return;
-
-    toast.info("Đang tạo khung giờ cho lịch làm việc...");
+  const fetchSchedules = async () => {
+    if (!userId) return;
     setIsLoading(true);
-
     try {
-      // Chuẩn bị dữ liệu cho API generate_time_slots
-      const data = {
-        doctor_id: userId,
-        start_date: format(new Date(), "yyyy-MM-dd"),
-        end_date: format(addWeeks(new Date(), 4), "yyyy-MM-dd"),
-        slot_duration: schedules[0].slot_duration || 30,
-        department: schedules[0].department || "",
-        location: schedules[0].location || "",
-        room: schedules[0].room || "",
-        max_patients: schedules[0].max_patients_per_slot || 1
-      };
-
-      console.log("Sending data to generate_time_slots API:", JSON.stringify(data, null, 2));
-
-      // Gọi API generate_time_slots
-      const response = await appointmentService.generateTimeSlots(data);
-
-      console.log("Generate time slots response:", response);
-
-      // Thông báo thành công
-      toast.success(`Đã tạo ${response.length} khung giờ khám bệnh thành công!`);
-
-      // Tải lại dữ liệu
-      fetchTimeSlotsForWeek();
-    } catch (error: any) {
-      console.error("Error generating time slots:", error);
-      let errorMessage = "Không thể tạo khung giờ khám bệnh.";
-
-      // Log chi tiết hơn để debug
-      console.log("Error details:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-
-      if (error.response?.status === 404) {
-        errorMessage = "API tạo khung giờ không tồn tại. Vui lòng liên hệ quản trị viên.";
-      } else if (error.response?.status === 401 || error.response?.status === 403) {
-        errorMessage = "Bạn cần đăng nhập lại để tạo khung giờ.";
-        await ensureAuthenticated();
-      } else if (error.response?.status === 400) {
-        // Xử lý lỗi 400 chi tiết hơn
-        if (error.response?.data?.error) {
-          errorMessage = `Lỗi: ${error.response.data.error}`;
-        } else if (error.response?.data?.detail) {
-          errorMessage = `Lỗi: ${error.response.data.detail}`;
-        } else {
-          errorMessage = `Lỗi dữ liệu: ${JSON.stringify(error.response?.data)}`;
-        }
-      } else if (error.response?.status === 500) {
-        // Xử lý lỗi 500 (Internal Server Error)
-        if (error.response?.data?.error) {
-          errorMessage = `Lỗi máy chủ: ${error.response.data.error}`;
-        } else {
-          errorMessage = "Lỗi máy chủ nội bộ. Vui lòng thử lại sau hoặc liên hệ quản trị viên.";
-        }
-      } else if (error.message?.includes('Network Error')) {
-        errorMessage = "Không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      toast.error(errorMessage);
+      const data = await UserService.getDoctorWorkingSchedules(userId);
+      setSchedules(data);
+    } catch (error) {
+      toast.error("Không thể tải lịch làm việc. Vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
-  // Tải dữ liệu khi component được mount hoặc khi userId thay đổi
   useEffect(() => {
-    if (userId) {
-      fetchAvailabilities().then(availabilities => {
-        if (availabilities.length > 0) {
-          // Nếu đã có lịch làm việc, kiểm tra xem có khung giờ nào không
-          fetchTimeSlotsForWeek().then(slots => {
-            // Nếu không có khung giờ nào, tạo khung giờ tự động
-            const hasSlots = Object.values(slots).some(daySlots => daySlots.length > 0);
-            if (!hasSlots) {
-              console.log("Không tìm thấy khung giờ nào, tạo khung giờ tự động...");
-              toast.info("Tạo khung giờ tự động cho lịch làm việc...");
-              createTimeSlots(availabilities);
-            }
-          });
-        }
+    if (userId) fetchSchedules();
+  }, [userId]);
+
+  // Thêm mới lịch làm việc
+  const handleAdd = async (values: any) => {
+    if (!userId) return;
+    setIsLoading(true);
+    try {
+      await UserService.createDoctorWorkingSchedule({
+        doctor: userId,
+        day_of_week: values.day_of_week,
+        start_time: values.start_time,
+        end_time: values.end_time,
+        is_active: true,
       });
+      toast.success("Đã thêm lịch làm việc!");
+      fetchSchedules();
+      setShowDialog(false);
+    } catch (error) {
+      toast.error("Không thể thêm lịch làm việc.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [userId])
+  };
+
+  // Sửa lịch làm việc
+  const handleUpdate = async (id: number, values: any) => {
+    setIsLoading(true);
+    try {
+      await UserService.updateDoctorWorkingSchedule(id, values);
+      toast.success("Đã cập nhật lịch làm việc!");
+      fetchSchedules();
+      setShowDialog(false);
+    } catch (error) {
+      toast.error("Không thể cập nhật lịch làm việc.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Xóa lịch làm việc
+  const handleDelete = async (id: number) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa lịch làm việc này không?")) return;
+    setIsLoading(true);
+    try {
+      await UserService.deleteDoctorWorkingSchedule(id);
+      toast.success("Đã xóa lịch làm việc!");
+      fetchSchedules();
+    } catch (error) {
+      toast.error("Không thể xóa lịch làm việc.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Tải lại time slots khi viewDate thay đổi
   useEffect(() => {
     if (userId) {
-      fetchTimeSlotsForWeek()
+      fetchSchedules()
     }
   }, [viewDate])
 
@@ -374,8 +259,8 @@ export function DoctorSchedule() {
       const overlappingSchedules = [];
       for (const dayValue of values.weekdays) {
         const day = parseInt(dayValue);
-        const existingSchedules = availabilities.filter(schedule =>
-          schedule.weekday === day &&
+        const existingSchedules = schedules.filter(schedule =>
+          schedule.day_of_week === day &&
           ((values.start_time <= schedule.end_time && values.end_time >= schedule.start_time) ||
            (schedule.start_time <= values.end_time && schedule.end_time >= values.start_time))
         );
@@ -430,8 +315,7 @@ export function DoctorSchedule() {
       // Reset form và tải lại dữ liệu
       form.reset();
       setShowDialog(false);
-      fetchAvailabilities();
-      fetchTimeSlotsForWeek();
+      fetchSchedules();
     } catch (error: any) {
       console.error("Error creating schedule and time slots:", error);
       let errorMessage = "Không thể tạo lịch làm việc và khung giờ.";
@@ -478,42 +362,6 @@ export function DoctorSchedule() {
     }
   }
 
-  // Xử lý xóa lịch làm việc
-  const handleDelete = async (id: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa lịch làm việc này không?")) {
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      await appointmentService.deleteDoctorAvailability(id)
-      toast.success("Xóa lịch làm việc thành công!")
-      fetchAvailabilities()
-      fetchTimeSlotsForWeek()
-    } catch (error) {
-      console.error("Error deleting availability:", error)
-      toast.error("Không thể xóa lịch làm việc. Vui lòng thử lại sau.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Xử lý chỉnh sửa lịch làm việc
-  const handleEdit = (schedule: DoctorAvailability) => {
-    setEditingId(schedule.id)
-    form.reset({
-      weekdays: [String(schedule.weekday)],
-      start_time: schedule.start_time,
-      end_time: schedule.end_time,
-      location: schedule.location || "",
-      department: schedule.department || "",
-      room: schedule.room || "",
-      slot_duration: String(schedule.slot_duration || 30),
-      max_patients_per_slot: String(schedule.max_patients_per_slot || 1),
-    })
-    setShowDialog(true)
-  }
-
   // Tuần trước/sau
   const goToPreviousWeek = () => {
     setViewDate(prev => {
@@ -554,16 +402,16 @@ export function DoctorSchedule() {
   // Lấy time slots cho một ngày cụ thể
   const getTimeSlotsForDay = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd")
-    return timeSlots.filter(slot => slot.date === dateStr)
+    return schedules.filter(schedule => schedule.day_of_week === date.getDay())
   }
 
   // Dựng danh sách lịch làm việc
   const buildScheduleList = () => {
-    const schedulesByDay: { [key: string]: DoctorAvailability[] } = {}
+    const schedulesByDay: { [key: string]: DoctorWorkingSchedule[] } = {}
 
     // Nhóm theo ngày trong tuần
-    availabilities.forEach(schedule => {
-      const day = String(schedule.weekday)
+    schedules.forEach(schedule => {
+      const day = String(schedule.day_of_week)
       if (!schedulesByDay[day]) {
         schedulesByDay[day] = []
       }
@@ -595,7 +443,20 @@ export function DoctorSchedule() {
                       <span>{schedule.start_time.substring(0, 5)} - {schedule.end_time.substring(0, 5)}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleEdit(schedule)}>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {
+                        setEditingId(schedule.id)
+                        form.reset({
+                          weekdays: [String(schedule.day_of_week)],
+                          start_time: schedule.start_time,
+                          end_time: schedule.end_time,
+                          location: schedule.location || "",
+                          department: schedule.department || "",
+                          room: schedule.room || "",
+                          slot_duration: String(schedule.slot_duration || 30),
+                          max_patients_per_slot: String(schedule.max_patients_per_slot || 1),
+                        })
+                        setShowDialog(true)
+                      }}>
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(schedule.id)}>
@@ -672,43 +533,7 @@ export function DoctorSchedule() {
               <Plus className="h-4 w-4 mr-1" />
               Lịch làm việc
             </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="px-3 shadow-none"
-              onClick={() => {
-                if (!userId) {
-                  toast.error("Không tìm thấy thông tin bác sĩ. Vui lòng đăng nhập lại.");
-                  return;
-                }
-
-                // Tạo khung giờ thủ công cho lịch làm việc hiện tại
-                if (availabilities.length === 0) {
-                  toast.error("Bạn chưa có lịch làm việc nào. Vui lòng tạo lịch làm việc trước.");
-                  return;
-                }
-
-                toast.info("Đang tạo khung giờ cho lịch làm việc...");
-                createTimeSlots(availabilities);
-              }}
-            >
-              <CalendarIcon className="h-4 w-4 mr-1" />
-              Khung giờ
-            </Button>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="px-3"
-            onClick={() => {
-              window.location.href = '/dashboard/doctor/appointments';
-            }}
-          >
-            <CalendarDays className="h-4 w-4 mr-1" />
-            Xem lịch hẹn
-          </Button>
         </div>
       </div>
 
@@ -766,7 +591,7 @@ export function DoctorSchedule() {
                             <div
                               key={slot.id}
                               className={`p-2 rounded text-xs flex justify-between items-center ${
-                                slot.is_available
+                                slot.is_active
                                   ? 'bg-green-50 border-l-4 border-green-500 border-t border-r border-b border-green-200'
                                   : 'bg-blue-50 border-l-4 border-blue-500 border-t border-r border-b border-blue-200'
                               }`}
@@ -776,7 +601,7 @@ export function DoctorSchedule() {
                                 {slot.location && <div className="text-xs opacity-70">{slot.location}</div>}
                               </div>
                               <div className="flex flex-col items-end">
-                                {slot.is_available ? (
+                                {slot.is_active ? (
                                   <div className="text-[10px] text-green-600 font-medium">{slot.current_patients}/{slot.max_patients}</div>
                                 ) : (
                                   <div className="text-[10px] text-blue-600 font-medium">Đã đặt</div>

@@ -1,11 +1,13 @@
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, NotAuthenticated
 from django.utils import timezone
 from django.db.models import Q
 from authentication.models import User
 from common_auth.permissions import IsAuthenticated, HasRole, HasResourceAccess
+from django.shortcuts import get_object_or_404
+from .serializers import AdminCreateUserSerializer
 
 def _get_description_for_specialty(specialty):
     """
@@ -87,6 +89,11 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_class(self):
+        if self.action == 'create' and hasattr(self.request.user, 'role') and self.request.user.role == 'ADMIN':
+            return AdminCreateUserSerializer
+        return super().get_serializer_class()
+
     def get_queryset(self):
         """Lấy danh sách người dùng dựa trên quyền"""
         # Check if user is authenticated and has a role attribute
@@ -107,13 +114,16 @@ class UserViewSet(viewsets.ModelViewSet):
         return User.objects.filter(id=self.request.user.id)
 
     def create(self, request, *args, **kwargs):
-        """Tạo người dùng mới (chỉ dành cho admin)"""
-        if request.user.role != 'ADMIN':
+        if not hasattr(request.user, 'role') or request.user.role != 'ADMIN':
             return Response(
                 {"detail": "Only administrators can create users."},
                 status=status.HTTP_403_FORBIDDEN
             )
-        return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         """Cập nhật thông tin người dùng"""
@@ -413,21 +423,13 @@ class PatientProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except self.model.DoesNotExist:
-            return Response({"detail": "Profile not found."}, status=404)
-
-    @action(detail=True, methods=['post'], url_path='create-by-user')
-    def create_by_user(self, request, pk=None):
-        if getattr(request.user, 'role', None) != 'ADMIN':
-            return Response({"detail": "Permission denied."}, status=403)
-        if self.model.objects.filter(user_id=pk).exists():
-            return Response({"detail": "Profile already exists."}, status=400)
-        data = request.data.copy()
-        data['user'] = pk
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            data = request.data.copy()
+            data['user'] = pk
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
 
 class DoctorProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
     """
@@ -461,21 +463,13 @@ class DoctorProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except self.model.DoesNotExist:
-            return Response({"detail": "Profile not found."}, status=404)
-
-    @action(detail=True, methods=['post'], url_path='create-by-user')
-    def create_by_user(self, request, pk=None):
-        if getattr(request.user, 'role', None) != 'ADMIN':
-            return Response({"detail": "Permission denied."}, status=403)
-        if self.model.objects.filter(user_id=pk).exists():
-            return Response({"detail": "Profile already exists."}, status=400)
-        data = request.data.copy()
-        data['user'] = pk
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            data = request.data.copy()
+            data['user'] = pk
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
 
 class NurseProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
     """
@@ -509,21 +503,13 @@ class NurseProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except self.model.DoesNotExist:
-            return Response({"detail": "Profile not found."}, status=404)
-
-    @action(detail=True, methods=['post'], url_path='create-by-user')
-    def create_by_user(self, request, pk=None):
-        if getattr(request.user, 'role', None) != 'ADMIN':
-            return Response({"detail": "Permission denied."}, status=403)
-        if self.model.objects.filter(user_id=pk).exists():
-            return Response({"detail": "Profile already exists."}, status=400)
-        data = request.data.copy()
-        data['user'] = pk
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            data = request.data.copy()
+            data['user'] = pk
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
 
 class PharmacistProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
     """
@@ -557,21 +543,13 @@ class PharmacistProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except self.model.DoesNotExist:
-            return Response({"detail": "Profile not found."}, status=404)
-
-    @action(detail=True, methods=['post'], url_path='create-by-user')
-    def create_by_user(self, request, pk=None):
-        if getattr(request.user, 'role', None) != 'ADMIN':
-            return Response({"detail": "Permission denied."}, status=403)
-        if self.model.objects.filter(user_id=pk).exists():
-            return Response({"detail": "Profile already exists."}, status=400)
-        data = request.data.copy()
-        data['user'] = pk
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            data = request.data.copy()
+            data['user'] = pk
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
 
 class InsuranceProviderProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
     """
@@ -605,21 +583,13 @@ class InsuranceProviderProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewS
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except self.model.DoesNotExist:
-            return Response({"detail": "Profile not found."}, status=404)
-
-    @action(detail=True, methods=['post'], url_path='create-by-user')
-    def create_by_user(self, request, pk=None):
-        if getattr(request.user, 'role', None) != 'ADMIN':
-            return Response({"detail": "Permission denied."}, status=403)
-        if self.model.objects.filter(user_id=pk).exists():
-            return Response({"detail": "Profile already exists."}, status=400)
-        data = request.data.copy()
-        data['user'] = pk
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            data = request.data.copy()
+            data['user'] = pk
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
 
 class LabTechnicianProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
     """
@@ -653,21 +623,13 @@ class LabTechnicianProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except self.model.DoesNotExist:
-            return Response({"detail": "Profile not found."}, status=404)
-
-    @action(detail=True, methods=['post'], url_path='create-by-user')
-    def create_by_user(self, request, pk=None):
-        if getattr(request.user, 'role', None) != 'ADMIN':
-            return Response({"detail": "Permission denied."}, status=403)
-        if self.model.objects.filter(user_id=pk).exists():
-            return Response({"detail": "Profile already exists."}, status=400)
-        data = request.data.copy()
-        data['user'] = pk
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            data = request.data.copy()
+            data['user'] = pk
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
 
 class AdminProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
     """
@@ -701,21 +663,13 @@ class AdminProfileViewSet(ProfileViewSetMixin, viewsets.GenericViewSet):
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except self.model.DoesNotExist:
-            return Response({"detail": "Profile not found."}, status=404)
-
-    @action(detail=True, methods=['post'], url_path='create-by-user')
-    def create_by_user(self, request, pk=None):
-        if getattr(request.user, 'role', None) != 'ADMIN':
-            return Response({"detail": "Permission denied."}, status=403)
-        if self.model.objects.filter(user_id=pk).exists():
-            return Response({"detail": "Profile already exists."}, status=400)
-        data = request.data.copy()
-        data['user'] = pk
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
+            data = request.data.copy()
+            data['user'] = pk
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=201)
+            return Response(serializer.errors, status=400)
 
 # ============================================================
 # Insurance Information ViewSet
@@ -967,3 +921,71 @@ class DoctorListViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         return queryset
+
+@api_view(['GET', 'PUT'])
+@permission_classes([permissions.IsAuthenticated])
+def user_profile_view(request, pk):
+    """
+    Lấy hoặc cập nhật profile của user theo role.
+    """
+    user = get_object_or_404(User, pk=pk)
+    role = user.role
+    profile = None
+    serializer_class = None
+    profile_model = None
+    profile_data = None
+
+    if role == 'PATIENT':
+        from .models import PatientProfile
+        from .serializers import PatientProfileSerializer
+        profile_model = PatientProfile
+        serializer_class = PatientProfileSerializer
+        profile, _ = profile_model.objects.get_or_create(user=user)
+    elif role == 'DOCTOR':
+        from .models import DoctorProfile
+        from .serializers import DoctorProfileSerializer
+        profile_model = DoctorProfile
+        serializer_class = DoctorProfileSerializer
+        profile, created = profile_model.objects.get_or_create(user=user, defaults={"years_of_experience": 0})
+    elif role == 'NURSE':
+        from .models import NurseProfile
+        from .serializers import NurseProfileSerializer
+        profile_model = NurseProfile
+        serializer_class = NurseProfileSerializer
+        profile, _ = profile_model.objects.get_or_create(user=user)
+    elif role == 'PHARMACIST':
+        from .models import PharmacistProfile
+        from .serializers import PharmacistProfileSerializer
+        profile_model = PharmacistProfile
+        serializer_class = PharmacistProfileSerializer
+        profile, _ = profile_model.objects.get_or_create(user=user)
+    elif role == 'LAB_TECH':
+        from .models import LabTechnicianProfile
+        from .serializers import LabTechnicianProfileSerializer
+        profile_model = LabTechnicianProfile
+        serializer_class = LabTechnicianProfileSerializer
+        profile, _ = profile_model.objects.get_or_create(user=user)
+    elif role == 'INSURANCE':
+        from .models import InsuranceProviderProfile
+        from .serializers import InsuranceProviderProfileSerializer
+        profile_model = InsuranceProviderProfile
+        serializer_class = InsuranceProviderProfileSerializer
+        profile, _ = profile_model.objects.get_or_create(user=user)
+    elif role == 'ADMIN':
+        from .models import AdminProfile
+        from .serializers import AdminProfileSerializer
+        profile_model = AdminProfile
+        serializer_class = AdminProfileSerializer
+        profile, _ = profile_model.objects.get_or_create(user=user)
+    else:
+        return Response({'detail': 'Role không hợp lệ hoặc chưa hỗ trợ.'}, status=400)
+
+    if request.method == 'GET':
+        serializer = serializer_class(profile)
+        return Response(serializer.data)
+    elif request.method == 'PUT':
+        serializer = serializer_class(profile, data=request.data.get('profile', {}), partial=True)
+        if serializer.is_valid():
+            serializer.save(user=user)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)

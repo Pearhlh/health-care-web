@@ -92,21 +92,31 @@ export async function PUT(request, { params }) {
     // Kiểm tra xem người dùng có tồn tại không
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      include: { profile: true },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Cập nhật hoặc tạo mới profile
-    const updatedProfile = await prisma.profile.upsert({
-      where: { user_id: userId },
-      update: data.profile,
-      create: {
-        user_id: userId,
-        ...data.profile,
-      },
-    });
+    let updatedProfile;
+
+    // Kiểm tra xem profile đã tồn tại chưa
+    if (user.profile) {
+      // Nếu đã có profile thì chỉ cập nhật
+      updatedProfile = await prisma.profile.update({
+        where: { user_id: userId },
+        data: data.profile,
+      });
+    } else {
+      // Nếu chưa có profile thì tạo mới
+      updatedProfile = await prisma.profile.create({
+        data: {
+          user_id: userId,
+          ...data.profile,
+        },
+      });
+    }
 
     // Lấy thông tin người dùng đã cập nhật
     const updatedUser = await prisma.user.findUnique({

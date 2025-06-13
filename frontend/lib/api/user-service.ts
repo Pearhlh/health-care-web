@@ -214,39 +214,15 @@ const UserService = {
   // Profile management - unified approach
   async getUserProfile(userId: number, role: string): Promise<any> {
     try {
-      let endpoint = "";
-      switch (role) {
-        case "DOCTOR":
-          endpoint = `/api/doctor-profile/${userId}/by-user/`;
-          break;
-        case "PATIENT":
-          endpoint = `/api/patient-profile/${userId}/by-user/`;
-          break;
-        case "NURSE":
-          endpoint = `/api/nurse-profile/${userId}/by-user/`;
-          break;
-        case "PHARMACIST":
-          endpoint = `/api/pharmacist-profile/${userId}/by-user/`;
-          break;
-        case "LAB_TECH":
-          endpoint = `/api/lab-technician-profile/${userId}/by-user/`;
-          break;
-        case "ADMIN":
-          endpoint = `/api/admin-profile/${userId}/by-user/`;
-          break;
-        case "INSURANCE":
-          endpoint = `/api/insurance-provider-profile/${userId}/by-user/`;
-          break;
-        default:
-          throw new Error(`Unsupported role: ${role}`);
-      }
-      const response = await apiClient.get(endpoint);
+      // Ưu tiên gọi endpoint chuẩn hóa
+      const response = await apiClient.get(`/api/users/${userId}/profile`);
       return response.data;
-    } catch (error) {
-      console.error(
-        `Error fetching ${role} profile for user ${userId}:`,
-        error
-      );
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        // Nếu chưa có profile thì trả về object rỗng để FE hiển thị form tạo mới
+        return {};
+      }
+      console.error(`Error fetching profile for user ${userId}:`, error);
       throw error;
     }
   },
@@ -260,37 +236,39 @@ const UserService = {
       let endpoint = "";
       switch (role) {
         case "DOCTOR":
-          endpoint = "/api/doctor-profile/create_or_update/";
+          endpoint = `/api/users/${userId}/profile`;
           break;
         case "PATIENT":
-          endpoint = "/api/patient-profile/create_or_update/";
+          endpoint = `/api/users/${userId}/profile`;
           break;
         case "NURSE":
-          endpoint = "/api/nurse-profile/create_or_update/";
+          endpoint = `/api/users/${userId}/profile`;
           break;
         case "PHARMACIST":
-          endpoint = "/api/pharmacist-profile/create_or_update/";
+          endpoint = `/api/users/${userId}/profile`;
           break;
         case "LAB_TECH":
-          endpoint = "/api/lab-technician-profile/create_or_update/";
+          endpoint = `/api/users/${userId}/profile`;
           break;
         case "ADMIN":
-          endpoint = "/api/admin-profile/create_or_update/";
+          endpoint = `/api/users/${userId}/profile`;
           break;
         case "INSURANCE":
-          endpoint = "/api/insurance-provider-profile/create_or_update/";
+          endpoint = `/api/users/${userId}/profile`;
           break;
         default:
           throw new Error(`Unsupported role: ${role}`);
       }
 
-      // Đảm bảo có trường user
+      // Chuẩn bị dữ liệu profile
       const profileData = {
-        ...data,
-        user: userId,
+        profile: {
+          ...data,
+          role: role, // Thêm role vào profile
+        },
       };
 
-      const response = await apiClient.post(endpoint, profileData);
+      const response = await apiClient.put(endpoint, profileData);
       return response.data;
     } catch (error) {
       console.error(

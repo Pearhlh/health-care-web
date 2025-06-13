@@ -258,34 +258,17 @@ const UserService = {
     data: any
   ): Promise<any> {
     try {
-      let endpoint = "";
-      switch (role) {
-        case "DOCTOR":
-          endpoint = `/api/users/${userId}/profile/doctor/`;
-          break;
-        case "PATIENT":
-          endpoint = `/api/users/${userId}/profile/patient/`;
-          break;
-        case "NURSE":
-          endpoint = `/api/users/${userId}/profile/nurse/`;
-          break;
-        case "PHARMACIST":
-          endpoint = `/api/users/${userId}/profile/pharmacist/`;
-          break;
-        case "LAB_TECH":
-          endpoint = `/api/users/${userId}/profile/lab-tech/`;
-          break;
-        case "ADMIN":
-          endpoint = `/api/users/${userId}/profile/admin/`;
-          break;
-        case "INSURANCE":
-          endpoint = `/api/users/${userId}/profile/insurance/`;
-          break;
-        default:
-          throw new Error(`Unsupported role: ${role}`);
-      }
+      const endpoint = `/api/users/${userId}/profile`;
 
-      const response = await apiClient.put(endpoint, data);
+      // Chuẩn bị dữ liệu profile
+      const profileData = {
+        profile: {
+          ...data,
+          role: role, // Thêm role vào profile
+        },
+      };
+
+      const response = await apiClient.put(endpoint, profileData);
       return response.data;
     } catch (error) {
       console.error(
